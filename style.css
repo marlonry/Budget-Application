@@ -1,7 +1,6 @@
 /**********************************************
 *** GENERAL
 **********************************************/
-
 * {
     margin: 0;
     padding: 0;
@@ -21,6 +20,7 @@ body {
     position: relative;
     height: 100vh;
     font-weight: 400;
+    margin: 20px; /* DELETE THIS LATER ON */
 }
 
 .right { float: right; }
