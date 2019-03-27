@@ -21,6 +21,7 @@ body {
     height: 100vh;
     font-weight: 400;
     margin: 20px; /* DELETE THIS LATER ON */
+    padding: 30px; /* DELETE THIS LATER ON */
 }
 
 .right { float: right; }
