@@ -21,7 +21,18 @@ var budgetController = (function() {
         totals: {
             exp: 0,
             inc: 0,
-        }
+        },
+        budget: 0,
+        percentage: -1,
+    }
+
+    // function is created to calculate the inc and exp by using only function which can be call later multiple times for different calculations in this case for income and expenses. 
+    var calculateTotal = function(type) {
+        var sum = 0;
+        data.allItems[type].forEach(function(cur) {
+            sum += cur.value;
+        });
+        data.totals[type] = sum;
     }
 
     return {
@@ -52,6 +63,55 @@ var budgetController = (function() {
             // return the new element which is an object containing id, des and val
             return newItem;
         },
+
+        deleteItem: function(type, id) {
+            var ids, index;
+            // id = 6
+            // data.allItems[type][id]; ---> it cant be done like this because they Id wont always be organized in the same position as the indexes of the array 
+            // ids = [1,2,4,6,8] ---> So it this case if we wanted to delete the item with id 6 it is stores on the third index of the array therefore accesing the ids by indexes wont work
+            // index = 3
+
+            // creates array of the ids
+            ids = data.allItems[type].map(function(current) {
+                return current.id 
+            })
+
+            // so now after getting the array of the ids we can find the index of the id that was passed as an argument so it they id was 4 the index of method will find that element, in this case 6 is on the third index. it is stored on the index variable.
+            index = ids.indexOf(id);
+
+            if(index !== -1) {
+                data.allItems[type].splice(index, 1);
+            }
+        },
+
+        // calculates all nessesary results and stores the calculations in the data structure for later usage
+        calculateBudget: function() {
+            // calculate totale income and expenses
+            calculateTotal('exp');
+            calculateTotal('inc');
+
+            // calculate the budget: income - expenses
+            data.budget = data.totals.inc - data.totals.exp;
+
+            // calculate the percentage of income that we spent
+            if(data.totals.inc > 0) {
+                data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
+            } else {
+                data.percentage = -1; // non-existant
+            }
+        },
+
+        getBudget: function() {
+            // returns and object containning all the data from the data structure
+            return {
+                budget: data.budget,
+                totalInc: data.totals.inc,
+                totalExp: data.totals.exp,
+                percentage: data.percentage,
+            }
+        },
+
+        // testing methods to see the data structure
         testing: function() {
             console.log(data);
         } 
@@ -69,6 +129,11 @@ var UIController = (function(){
         inputButton: '.add__btn',
         incomeContainer: '.income__list',
         expenseContainer: '.expenses__list',
+        budgetLabel: '.budget__value',
+        incomeLabel: '.budget__income--value',
+        expensesLabel: '.budget__expenses--value',
+        percentageLabel: '.budget__expenses--percentage',
+        container: '.container',
     }
     return {
         getInput: function() {
@@ -85,7 +150,7 @@ var UIController = (function(){
             // Create HTML string with placeholder text
             if(type === "inc") {
             element = DOMstrings.incomeContainer;
-            html = `<div class="item clearfix" id="income-%id%">
+            html = `<div class="item clearfix" id="inc-%id%">
                 <div class="item__description">%description%</div>
                 <div class="right clearfix">
                     <div class="item__value">%value%</div>
@@ -96,7 +161,7 @@ var UIController = (function(){
             </div>`
             } else if(type === "exp") {
             element = DOMstrings.expenseContainer;
-            html = `<div class="item clearfix" id="expense-%id%">
+            html = `<div class="item clearfix" id="exp-%id%">
                 <div class="item__description">%description%</div>
                 <div class="right clearfix">
                     <div class="item__value">%value%</div>
@@ -122,7 +187,7 @@ var UIController = (function(){
             // selects the elements from the DOMstrings object to 
             fields = document.querySelectorAll(DOMstrings.inputDescription + ',' + DOMstrings.inputValue);
 
-            // fieldsArray = Array.from(fields);
+            // fieldsArray = Array.from(fields); // Makes the list an array by using this trick with the slice method
             fieldsArray = Array.prototype.slice.call(fields);
 
             // runs over the array to clear the elements
@@ -131,6 +196,22 @@ var UIController = (function(){
             });
 
             fieldsArray[0].focus();
+        },
+
+        displayBudget: function(obj) {
+            // this accesses the html elements then sets the content to the object data
+            // DOMstring gets the css class for each element
+            document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
+            document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc;
+            document.querySelector(DOMstrings.expensesLabel).textContent = obj.totalExp;
+            
+            // Adds the percentage only if the percentage is more than 0 this happens when the is only expenses in the data structure so it will set the percentage to infinity otherwise
+            // else set element to this "---" 
+            if(obj.percentage > 0) {
+                document.querySelector(DOMstrings.percentageLabel).textContent = obj.percentage + "%";
+            } else {
+                document.querySelector(DOMstrings.percentageLabel).textContent = "---";
+            }
         },
 
         getDOMstrings: function() {
@@ -153,14 +234,50 @@ var controller = (function(budgetCtrl, UICtrl) {
                 ctrlAddItem();
             }
         });
+
+        // set up event listener to do event delegation --> selects parent element
+        document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem)
     };
 
-    var updateBudget = function() {
-        // 1. Calculate the budget
 
-        // 2. Return the budget
+
+    var updateBudget = function() {
+        
+        // 1. Calculate the budget 
+        budgetCtrl.calculateBudget();
+
+        // 2. Return the budget object from the get budget method which only shows an object
+        var budget = budgetCtrl.getBudget();
 
         // 3. Display the budget on the UI
+        UICtrl.displayBudget(budget);
+    }
+
+    // creates the function that will be call by the event listerner
+    // we pass the event object to do event delegation and dom traversing
+    var ctrlDeleteItem = function(event) {
+        var itemID, splitID, type, ID;
+
+        // event traversing although it is hard coded there should be a better way to get this to work
+        // other way to do this would be to set up the id in thebutton itself and then from there find the parent node with the closest() method which specifies the class of the parent.
+        itemID = event.target.parentNode.parentNode.parentNode.parentNode.id;
+
+        // coerce to true if it exist else coerce to false
+        if(itemID) {
+
+            // splitID is the id split in the - which will get you "inc" and "0" in an array
+            splitID = itemID.split('-');
+            type = splitID[0];
+            ID = splitID[1];
+
+            // delete item from data structure
+
+            // delete item from ui
+
+            // update and show the budget
+
+            // update the ui
+        }
     }
 
     
@@ -189,6 +306,16 @@ var controller = (function(budgetCtrl, UICtrl) {
 
     return {
         init: function() {
+            // we call the display budget with an empy object for the init function
+            UICtrl.displayBudget(
+                {
+                    budget: 0,
+                    totalInc: 0,
+                    totalExp: 0,
+                    percentage: -1,
+                }
+            );
+            // sets up the evenlisteners
             setupEventListeners();
         }
     }
