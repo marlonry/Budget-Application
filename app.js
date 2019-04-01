@@ -79,6 +79,7 @@ var budgetController = (function() {
             // so now after getting the array of the ids we can find the index of the id that was passed as an argument so it they id was 4 the index of method will find that element, in this case 6 is on the third index. it is stored on the index variable.
             index = ids.indexOf(id);
 
+            // indexof return -1 when the element doesnt exist in the array so then we create and if statement to check if we have an index if there is remove that element with the splice method for arrays which removes, inserts or replaces elements in the array.
             if(index !== -1) {
                 data.allItems[type].splice(index, 1);
             }
@@ -181,6 +182,11 @@ var UIController = (function(){
             document.querySelector(element).insertAdjacentHTML('beforeend', newhtml);
         },
 
+        deleteListItem: function(selectorID) {
+            var el = document.getElementById(selectorID);
+            el.parentNode.removeChild(el);
+        },
+
         clearFields: function() {
             var fields, fieldsArray;
 
@@ -239,8 +245,6 @@ var controller = (function(budgetCtrl, UICtrl) {
         document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem)
     };
 
-
-
     var updateBudget = function() {
         
         // 1. Calculate the budget 
@@ -259,7 +263,7 @@ var controller = (function(budgetCtrl, UICtrl) {
         var itemID, splitID, type, ID;
 
         // event traversing although it is hard coded there should be a better way to get this to work
-        // other way to do this would be to set up the id in thebutton itself and then from there find the parent node with the closest() method which specifies the class of the parent.
+        // other way to do this would be to set up the id in the button itself and then from there find the parent node with the closest() method which specifies the class of the parent.
         itemID = event.target.parentNode.parentNode.parentNode.parentNode.id;
 
         // coerce to true if it exist else coerce to false
@@ -268,15 +272,16 @@ var controller = (function(budgetCtrl, UICtrl) {
             // splitID is the id split in the - which will get you "inc" and "0" in an array
             splitID = itemID.split('-');
             type = splitID[0];
-            ID = splitID[1];
+            ID = parseInt(splitID[1]);
 
             // delete item from data structure
+            budgetCtrl.deleteItem(type, ID);
 
-            // delete item from ui
+            // delete item from ui // update the ui
+            UICtrl.deleteListItem(itemID);
 
             // update and show the budget
-
-            // update the ui
+            updateBudget();
         }
     }
 
