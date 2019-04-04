@@ -185,10 +185,6 @@ var UIController = (function(){
         return (type === 'exp' ? '-' : '+') + ' ' + int + '.' + dec;
     };
 
-    /*----------------------------------------------------------------------------------------------------
-    ---------------------------------------------------------------------------------------------------
-    Continue Analizing code from here ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
     // creates the nodelistforech function with 2 arguments an array and a callback function
     // runs a loop as loong as i is less than the lenght of the list argument
     // then we pass arguments into the callback function
@@ -208,7 +204,7 @@ var UIController = (function(){
         },
 
         addListItem: function(obj, type) {
-            var html, newhtml;
+            var html, newhtml, element;
             
             // Create HTML string with placeholder text
             if(type === "inc") {
@@ -245,8 +241,8 @@ var UIController = (function(){
         },
 
         deleteListItem: function(selectorID) {
-            var el = document.getElementById(selectorID);
-            el.parentNode.removeChild(el);
+            var el = document.getElementById(selectorID); // select element to remove
+            el.parentNode.removeChild(el); // traverses dom one position up then form the parent we remove the el element with the removeChild() method
         },
 
         clearFields: function() {
@@ -298,6 +294,10 @@ var UIController = (function(){
                 }
             });
         },
+
+        /*----------------------------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------
+    Continue Analizing code from here ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
         displayDate: function(){
             var now, year, month;
