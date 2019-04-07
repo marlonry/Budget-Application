@@ -295,10 +295,6 @@ var UIController = (function(){
             });
         },
 
-        /*----------------------------------------------------------------------------------------------------
-    ---------------------------------------------------------------------------------------------------
-    Continue Analizing code from here ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
         displayDate: function(){
             var now, year, month;
 
@@ -363,7 +359,7 @@ var controller = (function(budgetCtrl, UICtrl) {
         // calculate percentages
         budgetCtrl.calculatePercentages();
 
-        // read percentages form the budget controller
+        // read percentages from the budget controller
         var percentages = budgetCtrl.getPercentages();
 
         // update user interface with new percentages
