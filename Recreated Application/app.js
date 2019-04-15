@@ -3,11 +3,10 @@
 const budgetController = (() => {
 
     class Income {
-        constructor(id, description, value, percentage) {
+        constructor(id, description, value) {
             this.id = id;
             this.description = description;
             this.value = value;
-            this.percentage = percentage;
         }
     };
 
@@ -20,7 +19,11 @@ const budgetController = (() => {
         }
 
         calculatePerc() {
-            this.percentage = Math.round((this.value / data.totals.exp) * 100);
+            if(data.totals.inc > 0) {
+                this.percentage = Math.round((this.value / data.totals.inc) * 100);
+            } else {
+                this.percentage = -1;
+            }
         }
     };
 
@@ -75,11 +78,11 @@ const budgetController = (() => {
             data.totals.exp = expense;
     
             // calculate the budget income - expenses
-            data.budget = income - expense;
+            data.budget = Math.abs(income - expense);
             
             // percentage of the expenses
             if(data.totals.inc > 0) {
-                data.percentage = (data.totals.exp / data.totals.inc) * 100;
+                data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
             } else {
                 data.percentage = -1;
             }
@@ -133,7 +136,32 @@ const UIController = (() => {
         container: '.container',
         deleteButton: 'item__delete--btn',
         listItems: '.item',
+        percetagesLabel: '.item__percentage',
+        dateLabel: '.budget__title--month',
     } 
+
+    function forEachNodeList(list, callback) {
+        for(let i = 0; i < list.length; i++) {
+            callback(list[i], i);
+        }
+    }
+
+    function formatValues(num, type) {
+        const numbers = num.toFixed(2).split(".");
+        let [dec, com] = numbers;
+        dec = parseInt(dec);
+        dec = dec.toLocaleString("en");
+
+        let value;
+
+        if(type === "inc") {
+            value = `+${dec}.${com}`;
+        } else if(type === "exp") {
+            value = `-${dec}.${com}`;
+        }
+
+        return value;
+    }
 
     // returning object making methods and things publicly accesible to other controllers 
     return {
@@ -143,7 +171,7 @@ const UIController = (() => {
             return {
                 type: document.querySelector(DOMStrings.inputType).value,
                 description: document.querySelector(DOMStrings.inputDescription).value,
-                value: parseFloat(Math.abs(document.querySelector(DOMStrings.inputValue).value)),
+                value: Math.abs(parseFloat(document.querySelector(DOMStrings.inputValue).value)),
             }
         },
         // method to add item to the ui
@@ -155,7 +183,7 @@ const UIController = (() => {
                 `<div class="item clearfix" id="inc-${ID}">
                     <div class="item__description">${description}</div>
                     <div class="right clearfix">
-                        <div class="item__value">${value}</div>
+                        <div class="item__value">${formatValues(value, type)}</div>
                         <div class="item__delete">
                             <button data-id="inc-${ID}" class="item__delete--btn"><i class="ion-ios-close-outline"></i></button>
                         </div>
@@ -167,7 +195,7 @@ const UIController = (() => {
                 `<div class="item clearfix" id="exp-${ID}">
                     <div class="item__description">${description}</div>
                     <div class="right clearfix">
-                        <div class="item__value">${value}</div>
+                        <div class="item__value">${formatValues(value, type)}</div>
                         <div class="item__percentage">10</div>
                         <div class="item__delete">
                             <button data-id="exp-${ID}" class="item__delete--btn"><i class="ion-ios-close-outline"></i></button>
@@ -180,10 +208,30 @@ const UIController = (() => {
             document.querySelector(element).insertAdjacentHTML('beforeend', html);
 
         },
+        formatValues: (num, type) => {
+            const numbers = num.toFixed(2).split(".");
+            let [dec, com] = numbers;
+            dec = parseInt(dec);
+            dec = dec.toLocaleString("en").trim("-");
+    
+            let value;
+    
+            if(type === "inc") {
+                value = `+${dec}.${com}`;
+            } else if(type === "exp") {
+                value = `-${dec}.${com}`;
+            }
+    
+            return value;
+        },
         showCalculations: (obj) => {
-            document.querySelector(DOMStrings.budgetLabel).textContent = obj.budget;
-            document.querySelector(DOMStrings.incomeLabel).textContent = obj.inc;
-            document.querySelector(DOMStrings.expenseLabel).textContent = obj.exp;
+            let type;
+
+            obj.inc > obj.exp ? type = "inc" : type = "exp";
+
+            document.querySelector(DOMStrings.budgetLabel).textContent = formatValues(obj.budget, type);
+            document.querySelector(DOMStrings.incomeLabel).textContent = formatValues(obj.inc, "inc");
+            document.querySelector(DOMStrings.expenseLabel).textContent = formatValues(obj.exp, "exp");
 
             if(obj.percentage > 0) {
                 document.querySelector(DOMStrings.percentageLabel).textContent = `${obj.percentage}%`;
@@ -192,12 +240,6 @@ const UIController = (() => {
             }
         },
         deleteListItem(ID) {
-            function forEachNodeList(list, callback) {
-                for(let i = 0; i < list.length; i++) {
-                    callback(list[i], i);
-                }
-            }
-
             const listItems = document.querySelectorAll(DOMStrings.listItems);
 
             forEachNodeList(listItems, function(cur, i) {
@@ -206,6 +248,35 @@ const UIController = (() => {
                     el.parentNode.removeChild(el);
                 };
             });
+        },
+        displayPercentages: (arr) => {
+            const list = document.querySelectorAll(DOMStrings.percetagesLabel);
+
+            forEachNodeList(list, function(cur, i) {
+                if(arr[i] !== -1) {
+                    cur.textContent = `${arr[i]}%`;
+                } else {
+                    cur.textContent = `---`;
+                }
+            })
+        },
+        displayDate: () => {
+            const element = document.querySelector(DOMStrings.dateLabel);
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+            const year = new Date().getFullYear();
+            const month = new Date().getMonth();
+    
+            element.textContent = `${months[month]} ${year}`;
+        },
+        changeFieldsColor: () => {
+            const inputs = document.querySelectorAll(`${DOMStrings.inputType}, ${DOMStrings.inputDescription}, ${DOMStrings.inputValue}`);
+
+            forEachNodeList(inputs, function(cur, i) {
+                cur.classList.toggle('red-focus');
+            });
+
+            document.querySelector(`${DOMStrings.inputAddButton}`).classList.toggle('red');
         },
         clearFields: () => {
             document.querySelector(DOMStrings.inputDescription).value = "";
@@ -239,6 +310,8 @@ const controller = ((budgetCtrl, UICtrl) => {
                 deleteItem(e);
             }
         });
+
+        document.querySelector(DOM.inputType).addEventListener('change', UICtrl.changeFieldsColor);
     };
 
     const calculateBudget = () => {
@@ -251,6 +324,17 @@ const controller = ((budgetCtrl, UICtrl) => {
         // add calculation values to the ui
         UICtrl.showCalculations(values);
     };
+
+    const updatePercentages = () => {
+        // calculate percentages
+        budgetCtrl.calculatePercentages();
+        
+        // get percentages
+        const percentages = budgetController.getPercentages();
+
+        // update ui percentages on each node list item
+        UICtrl.displayPercentages(percentages);
+    }
 
     // adds item to the ui and data structure by calling the methods from those controllers
     const addItem = () => {
@@ -268,6 +352,9 @@ const controller = ((budgetCtrl, UICtrl) => {
 
             // calculate budget
             calculateBudget();
+
+            // update percentages
+            updatePercentages();
         }
     }
 
@@ -285,12 +372,16 @@ const controller = ((budgetCtrl, UICtrl) => {
 
         // recalculate the budgets
         calculateBudget();
+
+        // update percentages
+        updatePercentages();
     }
 
     // returns and object with one init method to initialize all the values and also all the event listeners
     return {
         init: () => {
             setEventListener();
+            UICtrl.displayDate();
             UICtrl.showCalculations({
                 budget: 0,
                 inc: 0,
